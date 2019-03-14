@@ -156,6 +156,13 @@ architecture rtl of top is
   signal dir_blue            : std_logic_vector(7 downto 0);
   signal dir_pixel_column    : std_logic_vector(10 downto 0);
   signal dir_pixel_row       : std_logic_vector(10 downto 0);
+  
+  signal pomocni       : std_logic_vector(18 downto 0);
+  signal bijela       : std_logic_vector(31 downto 0);
+  signal offset       : std_logic_vector(31 downto 0);
+  signal counter       : std_logic_vector(31 downto 0);
+  signal offset1       : std_logic_vector(31 downto 0);
+  signal counter1       : std_logic_vector(31 downto 0);
 
 begin
 
@@ -168,7 +175,7 @@ begin
   graphics_lenght <= conv_std_logic_vector(MEM_SIZE*8*8, GRAPH_MEM_ADDR_WIDTH);
   
   -- removed to inputs pin
-  direct_mode <= '1';
+  direct_mode <= '0';
   display_mode     <= "10";  -- 01 - text mode, 10 - graphics mode, 11 - text & graphics
   
   font_size        <= x"1";
@@ -250,16 +257,151 @@ begin
   --dir_red
   --dir_green
   --dir_blue
+  
+  process(dir_pixel_column) begin
+	  if(dir_pixel_column <= 80) then
+		dir_red <= "11111111";
+		dir_green <= "11111111";
+		dir_blue <= "11111111";
+	  elsif(dir_pixel_column > 80 and dir_pixel_column <= 160) then
+		dir_red <= "11000100";
+		dir_green <= "11000100";
+		dir_blue <= (others=>'0');
+	  elsif(dir_pixel_column > 160 and dir_pixel_column <= 240) then
+		dir_red <= (others=>'0');
+		dir_green <= "11000100";
+		dir_blue <= "11000100";
+	  elsif(dir_pixel_column > 240 and dir_pixel_column <= 320) then
+		dir_red <= (others=>'0');
+		dir_green <= "11000100";
+		dir_blue <= (others=>'0');
+	  elsif(dir_pixel_column > 320 and dir_pixel_column <= 400) then
+		dir_red <= "11000100";
+		dir_green <= (others=>'0');
+		dir_blue <= "11000100";
+	  elsif(dir_pixel_column > 400 and dir_pixel_column <= 480) then
+		dir_red <= "11000100";
+		dir_green <= (others=>'0');
+		dir_blue <= (others=>'0');
+	  elsif(dir_pixel_column > 480 and dir_pixel_column <= 560) then
+		dir_red <= (others=>'0');
+		dir_green <= (others=>'0');
+		dir_blue <= "11000100";
+	  elsif(dir_pixel_column > 560 and dir_pixel_column <= 640) then
+		dir_red <= (others=>'0');
+		dir_green <= (others=>'0');
+		dir_blue <= (others=>'0');
+	  end if;
+  end process;
+ 
  
   -- koristeci signale realizovati logiku koja pise po TXT_MEM
   --char_address
   --char_value
   --char_we
   
+  char_we <= '1';
+  
+  process(pix_clock_s) begin
+	if(pix_clock_s = '1' and pix_clock_s'event) then
+		if(char_address = MEM_SIZE) then
+			char_address <= (others=>'0');
+		else
+			char_address <= char_address + 1;
+		end if;
+		if(counter1 = 24000000) then
+			if(offset1 = 1200) then
+				offset1 <= (others=>'0');
+			else
+				offset1 <= offset1 + 1;
+			end if;
+			counter1 <= (others=>'0');
+		else
+			counter1 <= counter1 + 1;
+		end if;
+	end if;
+  end process;
+  
+  pomocni <= (others => '0');
+  
+  char_value <= "010010" when char_address = (pomocni & "0000001010000")+offset1 else --r
+					 "000001" when char_address = (pomocni & "0000001010001")+offset1 else --a
+					 "000100" when char_address = (pomocni & "0000001010010")+offset1 else --d
+					 "001001" when char_address = (pomocni & "0000001010011")+offset1 else --i
+					 "100000" when char_address = (pomocni & "0000001010100")+offset1 else -- 
+					 "001100" when char_address = (pomocni & "0000001010101")+offset1 else --l
+					 "001001" when char_address = (pomocni & "0000001010110")+offset1 else --i
+					 "100000" when char_address = (pomocni & "0000001010111")+offset1 else --
+					 "001111" when char_address = (pomocni & "0000001011000")+offset1 else --o
+					 "010110" when char_address = (pomocni & "0000001011001")+offset1 else --v
+					 "001111" when char_address = (pomocni & "0000001011010")+offset1 else --o
+					 "100000";
+					 
+  
+  
   -- koristeci signale realizovati logiku koja pise po GRAPH_MEM
   --pixel_address
   --pixel_value
   --pixel_we
   
+  pixel_we <= '1';
+  bijela <= (others=>'1');
   
+  
+  
+  process(pix_clock_s) begin
+	if(pix_clock_s = '1' and pix_clock_s'event) then
+		if(pixel_address = MEM_SIZE) then
+			pixel_address <= (others=>'0');
+		else
+			pixel_address <= pixel_address + 1;
+		end if;
+		if(counter = 24000000) then
+			if(offset = 624) then
+				offset <= (others=>'0');
+			else
+				offset <= offset + 1;
+			end if;
+			counter <= (others=>'0');
+		else
+			counter <= counter + 1;
+		end if;
+	end if;
+  end process;
+  
+  
+  pixel_value <= bijela when pixel_address = 100+offset else
+					  bijela when pixel_address = 120+offset else
+					  bijela when pixel_address = 140+offset else
+					  bijela when pixel_address = 160+offset else
+					  bijela when pixel_address = 180+offset else
+					  bijela when pixel_address = 200+offset else
+					  bijela when pixel_address = 220+offset else
+					  bijela when pixel_address = 240+offset else
+					  bijela when pixel_address = 260+offset else
+					  bijela when pixel_address = 280+offset else
+					  bijela when pixel_address = 300+offset else
+					  bijela when pixel_address = 320+offset else
+					  bijela when pixel_address = 340+offset else
+					  bijela when pixel_address = 360+offset else
+					  bijela when pixel_address = 380+offset else
+					  bijela when pixel_address = 400+offset else
+					  bijela when pixel_address = 420+offset else
+					  bijela when pixel_address = 440+offset else
+					  bijela when pixel_address = 460+offset else
+					  bijela when pixel_address = 480+offset else
+					  bijela when pixel_address = 500+offset else
+					  bijela when pixel_address = 520+offset else
+					  bijela when pixel_address = 540+offset else
+					  bijela when pixel_address = 560+offset else
+					  bijela when pixel_address = 580+offset else
+					  bijela when pixel_address = 600+offset else
+					  bijela when pixel_address = 620+offset else
+					  bijela when pixel_address = 640+offset else
+					  bijela when pixel_address = 660+offset else
+					  bijela when pixel_address = 680+offset else
+					  bijela when pixel_address = 700+offset else
+					  bijela when pixel_address = 720+offset else
+					 (others=>'0');
+				
 end rtl;
